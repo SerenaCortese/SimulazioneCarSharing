@@ -8,7 +8,7 @@ public class TestSimulatore {
 		sim.setNC(15);
 		sim.setT_IN(5);
 		
-		sim.init(8*60);
+		sim.init(8*60);//similuzione dura 8 ore
 		
 		sim.run();
 		

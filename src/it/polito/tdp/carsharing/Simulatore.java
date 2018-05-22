@@ -4,15 +4,27 @@ import java.util.PriorityQueue;
 
 public class Simulatore {
 	
-	// i tipi di eventi gestiti dal simulatore
+	/*
+	 * Enumerazione per i tipi di eventi gestiti dal simulatore.
+	 * ENUMERAZIONE: raccolta di costanti sotto un nome unico che racchiude il Tipo delle costanti
+	 * Sono costanti di valore nullo ma di tipo Evento, d'ora in poi ogni variabile che definiremo EventType
+	 * potrà assumere solo questi due valori:CUSTOMER_IN, CAR_RETURNED.
+	 */
 	enum EventType {
 		CUSTOMER_IN, // arriva un nuovo cliente
 		CAR_RETURNED // viene restituita un'auto
 	}
 	
+	//classe accessibile solo da Simulatore
 	class Event implements Comparable<Event> {
+		
 		private int minuti ; // minuti a partire dall'inizio della simulazione
+		//per soluzione completa potrei usare un LocalDateTime se simulazione su più giorni
+		//o LocalTime se simulazione dura solo un giorno.
+		
 		private EventType tipo ;
+		
+		//altre info potrebbero essere info sul cliente o sulla specifica macchina
 		
 		public Event(int minuti, EventType tipo) {
 			super();
@@ -26,8 +38,12 @@ public class Simulatore {
 			return tipo;
 		}
 		
+		//NO setter=> oggetto immutabile e la priority queue lo inserisce nel posto più adatto 
+		//se lo settassi di nuovo dopo inserimento in p.q., la p.q. non se ne accorgerebbe e la coda non sarebbe nel giusto ordine
+		
 		@Override
 		public int compareTo(Event other) {
+			//ordinamento crescente: rende minori tempi precedenti,maggiori quelli successivi
 			return this.minuti - other.minuti ;
 		}
 		@Override
@@ -96,8 +112,9 @@ public class Simulatore {
 		int time = 0 ;
 		while (time <= durataMax) {
 			Event e = new Event(time, EventType.CUSTOMER_IN) ;
+			//se volessi più variabilità nell'arrivo clienti, time+(int)Math.random()*minutiScelti ad esempio
 			queue.add(e) ;
-			time = time + T_IN ;
+			time = time + T_IN ;//ogni 10 minuti arriva un cliente=>aggiungo eventi
 		}
 		
 		// inizializzo le variabili di simulazione
@@ -110,7 +127,7 @@ public class Simulatore {
 	public void run() {
 		
 		Event e ;
-		while((e = queue.poll()) != null) {
+		while((e = queue.poll()) != null) {//estrae primo elemento in coda e lo elimina da coda
 			processEvent(e) ;
 		}
 	}
@@ -120,24 +137,26 @@ public class Simulatore {
 		System.out.println(e);
 		
 		switch(e.getTipo()) {
-		case CUSTOMER_IN:
-			clientiArrivati++ ;
-			if(disponibili>0) {
-				// cliente soddisfatto
-				disponibili-- ;
-				int durata = T_TRAVEL_BASE * (1+(int)(Math.random()*T_TRAVEL_DURATA)) ;
-				Event rientro = new Event(e.getMinuti()+durata, EventType.CAR_RETURNED) ;
-				queue.add(rientro) ;
-			} else {
-				// cliente insoddisfatto
-				clientiInsoddisfatti++ ;
-			}
-			
-			break;
-			
-		case CAR_RETURNED:
-			disponibili++ ;
-			break;
+			case CUSTOMER_IN:
+				clientiArrivati++ ;
+				if(disponibili>0) {
+					// cliente soddisfatto:gli diamo auto e prevediamo quando la riporterà
+					disponibili-- ;
+					int durata = T_TRAVEL_BASE * (1+(int)(Math.random()*T_TRAVEL_DURATA)) ;
+					//Math.random()=ho numero reale tra [0,1);*3=num reale tra [0,3); (int) = numero intero[0,3);
+					//+1={1,2,3}; *60minuti=>le 3 possibili durate di noleggio quindi rientrerà in quel tempo e schedulo suo rientro
+					Event rientro = new Event(e.getMinuti()+durata, EventType.CAR_RETURNED) ;
+					queue.add(rientro) ;
+				} else {
+					// cliente insoddisfatto
+					clientiInsoddisfatti++ ;
+				}
+				
+				break;
+				
+			case CAR_RETURNED:
+				disponibili++ ;
+				break;
 		}
 		
 	}
